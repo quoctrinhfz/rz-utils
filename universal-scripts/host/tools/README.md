@@ -276,7 +276,7 @@ This script is used to flash the initial bootloader image onto the board via a s
 
 Location:
 ```
-host/tools/bootloader_flasherr/
+host/tools/bootloader_flasher/
 ```
 
 Refer to the `Readme.md` file in that folder for detail instructions.
