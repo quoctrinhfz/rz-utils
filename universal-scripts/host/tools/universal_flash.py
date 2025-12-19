@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import argparse
 from dataclasses import dataclass
 from serial.tools.list_ports import comports
 
@@ -13,6 +14,11 @@ from firmware_compile import FirmwareBuilder, parse_args
 from bootloader_flash import BootloaderFlashUtil
 from sd_flash import SdFlashUtil
 from uload_bootloader_flash import UloadFlashUtil
+
+try:
+    import tomli
+except ImportError:
+    import tomllib as tomli
 
 @dataclass
 class FlashInfo:
@@ -29,13 +35,42 @@ class UniversalFlashUtil:
         self.__scriptDir = os.path.dirname(os.path.abspath(__file__))
         self.__rootDir = os.path.abspath(os.path.join(self.__scriptDir, '..', '..'))
         self.__imagesDir = os.path.abspath(os.path.join(self.__rootDir, 'target', 'images'))
-        self.json_file = "flash_images.json"
+        self.json_file = os.path.join(self.__scriptDir, "flash_images.json")
         self.boards_data = {}
+        self.board_config = {}
         self.selected_port = None
         self.selected_baud_rate = 115200
         self.selected_board_name = None
         self.selected_ip_address = "169.254.187.89"
         self.selected_info = None
+        
+        # Ensure bpgen and fiptool are executable
+        self._ensure_tools_executable()
+    
+    def _ensure_tools_executable(self):
+        """Make bpgen and fiptool executable if they exist"""
+        import platform
+        import stat
+        
+        # Determine OS-specific bin directory
+        os_name = platform.system().lower()
+        if os_name == "linux":
+            bin_dir = os.path.join(self.__scriptDir, 'bin', 'linux')
+        elif os_name == "windows":
+            bin_dir = os.path.join(self.__scriptDir, 'bin', 'windows')
+        else:
+            return  # Unknown OS, skip
+        
+        tools = ['bpgen', 'fiptool']
+        for tool in tools:
+            tool_path = os.path.join(bin_dir, tool)
+            if os.path.exists(tool_path):
+                try:
+                    # Add execute permission for owner, group, and others
+                    current_permissions = os.stat(tool_path).st_mode
+                    os.chmod(tool_path, current_permissions | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                except Exception as e:
+                    print(f"Warning: Could not set execute permission for {tool}: {e}")
 
     def load_json(self):
         try:
@@ -45,6 +80,17 @@ class UniversalFlashUtil:
             print(f"File '{self.json_file}' not found.")
         except json.JSONDecodeError as e:
             print(f"Error decoding JSON: {e}")
+    
+    def load_board_config(self):
+        """Load board configuration from TOML file"""
+        try:
+            config_path = os.path.join(self.__scriptDir, 'config', 'boards_flash_config.toml')
+            with open(config_path, 'rb') as f:
+                self.board_config = tomli.load(f)
+        except FileNotFoundError:
+            print(f"Warning: Board configuration file not found.")
+        except Exception as e:
+            print(f"Warning: Error loading board config: {e}")
 
     def input_menu(self):
         # Board selection
@@ -167,40 +213,11 @@ class UniversalFlashUtil:
 
     def run(self):
         self.load_json()
+        self.load_board_config()
         if not self.input_menu():
             return
         # Get information for the selected board
         self.info_get()
-
-        # Write Rootfs
-        if(self.yes_no_prompt("Do you want to write the rootfs?")):
-            print("Writing rootfs...")
-
-            # Prepare arguments for SD Flash
-            sdflash_args = [
-                '--board_name', f"{self.selected_board_name}",
-                '--serial_port', f"{self.selected_port}",
-                '--serial_port_baud', f"{self.selected_baud_rate}",
-                '--fastboot_type', f"{self.selected_info.rootfs_flash_method}",
-                '--image_rootfs', f"{self.__imagesDir}/{self.selected_info.rootfs}",
-            ]
-
-            method = (self.selected_info.rootfs_flash_method or "").lower()
-
-            if method == "udp":
-                self.selected_ip_address = input(f"Enter IP address for fastboot udp (default {self.selected_ip_address}): ") or self.selected_ip_address
-                ether_port = input("Enter the Ethernet port number (default 1): ") or "1"
-                sdflash_args += ['--ether_port', ether_port,
-                         '--ip_address', self.selected_ip_address]
-            elif method == "otg":
-                # No Ethernet/IP options needed for OTG/USB fastboot
-                pass
-            else:
-                print(f"Unsupported rootfs flash method: '{self.selected_info.rootfs_flash_method}'")
-                return False
-
-            sdFlashUtil = SdFlashUtil(args=sdflash_args)
-            sdFlashUtil.writeRootfs()
 
         # Write IPL
         if(self.yes_no_prompt("Do you want to write the IPL?")):
@@ -235,9 +252,143 @@ class UniversalFlashUtil:
                 uloadFlashUtil = UloadFlashUtil(args=uload_bootloader_args)
                 uloadFlashUtil.writeUloadBootloader()
 
+        # Write Rootfs
+        if(self.yes_no_prompt("Do you want to write the rootfs?")):
+            print("Writing rootfs...")
+
+            # Prepare arguments for SD Flash
+            sdflash_args = [
+                '--board_name', f"{self.selected_board_name}",
+                '--serial_port', f"{self.selected_port}",
+                '--serial_port_baud', f"{self.selected_baud_rate}",
+                '--fastboot_type', f"{self.selected_info.rootfs_flash_method}",
+                '--image_rootfs', f"{self.__imagesDir}/{self.selected_info.rootfs}",
+            ]
+
+            method = (self.selected_info.rootfs_flash_method or "").lower()
+
+            if method == "udp":
+                # Get ethernet port info from board config
+                ethernet_port_info = ""
+                ether_port = "1"  # default value
+                
+                if self.selected_board_name in self.board_config:
+                    board_cfg = self.board_config[self.selected_board_name]
+                    if 'ethernet_udp_index' in board_cfg:
+                        udp_index = board_cfg['ethernet_udp_index']
+                        if isinstance(udp_index, list):
+                            # If multiple ports available, use the first one
+                            ether_port = str(udp_index[0])
+                            ethernet_port_info = f" (Using Ethernet port: {ether_port}, available ports: {', '.join(map(str, udp_index))})"
+                        else:
+                            ether_port = str(udp_index)
+                            ethernet_port_info = f" (Using Ethernet port: {ether_port})"
+                
+                print(f"\n{'='*70}")
+                print(f"** IMPORTANT: Ethernet Connection Required **")
+                print(f"{'='*70}")
+                print(f"Please connect an Ethernet cable between:")
+                print(f"  - PC Host Ethernet port")
+                print(f"  - Board Ethernet port{ethernet_port_info}")
+                print(f"\nEnsure both devices are on the same network segment.")
+                print(f"{'='*70}\n")
+                self.selected_ip_address = input(f"Enter IP address for fastboot udp (default {self.selected_ip_address}): ") or self.selected_ip_address
+                
+                sdflash_args += ['--ether_port', ether_port,
+                         '--ip_address', self.selected_ip_address]
+            elif method == "otg":
+                # No Ethernet/IP options needed for OTG/USB fastboot
+                pass
+            else:
+                print(f"Unsupported rootfs flash method: '{self.selected_info.rootfs_flash_method}'")
+                return False
+
+            sdFlashUtil = SdFlashUtil(args=sdflash_args)
+            sdFlashUtil.writeRootfs()
+
+def show_help():
+    """Display help menu with options"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    readme_path = os.path.join(script_dir, "README.md")
+    
+    print("\n" + "="*70)
+    print("Universal Flash Tool - Help Menu")
+    print("="*70)
+    print("\nOptions:")
+    print("  1. View installation and setup instructions")
+    print("  2. Run the flash tool")
+    print("  3. Exit")
+    print("="*70)
+    
+    while True:
+        try:
+            choice = input("\nSelect an option (1-3): ").strip()
+            
+            if choice == "1":
+                # Display README.md path
+                if os.path.exists(readme_path):
+                    print("\n" + "="*70)
+                    print("Installation and Setup Instructions")
+                    print("="*70)
+                    print(f"\nPlease refer to the README.md file for detailed instructions:")
+                    print(f"\nFile path: {readme_path}")
+                    print("="*70)
+                    
+                    # Ask if user wants to continue to flash tool
+                    continue_choice = input("\nDo you want to run the flash tool now? (y/n): ").strip().lower()
+                    if continue_choice in ['y', 'yes']:
+                        return True
+                    else:
+                        return False
+                else:
+                    print(f"\nError: README.md not found at {readme_path}")
+                    return False
+                    
+            elif choice == "2":
+                return True
+                
+            elif choice == "3":
+                print("\nExiting...")
+                return False
+                
+            else:
+                print("Invalid choice. Please enter 1, 2, or 3.")
+                
+        except (KeyboardInterrupt, EOFError):
+            print("\n\nOperation cancelled.")
+            return False
+
 def main():
-    universalFlashUtil = UniversalFlashUtil()
-    universalFlashUtil.run()
+    try:
+        # Parse command line arguments
+        parser = argparse.ArgumentParser(
+            description='Universal Flash Tool for RZ boards',
+            add_help=False  # Disable default help to use custom help
+        )
+        parser.add_argument('--help', '-h', action='store_true', 
+                          help='Show help menu with installation instructions')
+        
+        args = parser.parse_args()
+        
+        # If --help is provided, show help menu
+        if args.help:
+            if not show_help():
+                sys.exit(0)
+        
+        # Run the flash tool
+        universalFlashUtil = UniversalFlashUtil()
+        universalFlashUtil.run()
+    except KeyboardInterrupt:
+        print("\n\nOperation cancelled by user.")
+        sys.exit(0)
+    except Exception as e:
+        if "SerialException" in type(e).__name__ or "device disconnected" in str(e).lower():
+            print("\n\nSerial connection lost or device disconnected.")
+            print("Operation cancelled.")
+            sys.exit(1)
+        else:
+            # Re-raise unexpected exceptions
+            raise
 
 if __name__ == '__main__':
     main()

@@ -284,19 +284,19 @@ flowchart TD
     C --> D[Display available serial ports]:::action
     D --> E[User selects port and baud rate]:::action
 
-    E --> F{Write RootFS?}:::decision
-    F -->|y| FR[Write RootFS to SD/eMMC]:::action
-    FR --> G{Write IPL?}:::decision
-    F -->|n| G{Write IPL?}:::decision
-
+    E --> G{Write IPL?}:::decision
     G -->|y| H{Select IPL method}:::decision
     H -->|BootloaderFlash| M[Compile firmware: build BL2 & FIP with per-board DTB at runtime]:::action
     M --> J[Write IPL by BootloaderFlash]:::action
     H -->|ULoadFlash| K[Write IPL by ULoadFlash]:::action
 
-    G -->|n| L((End)):::terminal
-    J --> L
-    K --> L
+    J --> F{Write RootFS?}:::decision
+    K --> F{Write RootFS?}:::decision
+    G -->|n| F{Write RootFS?}:::decision
+
+    F -->|y| FR[Write RootFS to SD/eMMC]:::action
+    FR --> L((End)):::terminal
+    F -->|n| L((End)):::terminal
 ```
 
 **Notes:**
@@ -304,14 +304,6 @@ flowchart TD
 - Insert the SD card if rootfs flashing is selected.
 - For Bootloader-flash: set boot switches to SCIF download mode.
 - For Uload-flash or rootfs flashing: set boot switches to normal mode.
-- Rootfs flash (UDP Fastboot): U-Boot fastboot-udp uses a single active Ethernet MAC per board. If multiple RJ45/PHY ports exist, only one is active (depending on board support). Select the interface via the interactive menu in universal_flash (when Rootfs flash is selected).
-
-  | Board       | Ethernet port to use |
-  |------------|------------------------|
-  | rzg2l-sbc  | 1 |
-  | rzv2l-evk  | 0 |
-  | rzg2l-evk  | 0 |
-  | rzv2h-evk  | 0, 1 |
 
 Both fastboot-otg and fastboot-udp write to U-Boot's current MMC device (typically mmc0). Depending on board and revision, mmc0 may point to the SD card or eMMC.
 

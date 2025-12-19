@@ -4,6 +4,7 @@
 
 [rzg2l-sbc]
 ethernet = ["11c20000", "11c30000"]
+ethernet_udp_index = 1  
 bl2_base = "0x12000"
 fconf_dtb_base = "0x2A000"
 # Uload bootloader
@@ -28,6 +29,7 @@ BID = ["1", "FA", "810"]
 
 [rzg2l-evk]
 ethernet = ["11c20000", "11c30000"]
+ethernet_udp_index = 0
 bl2_base = "0x12000"
 fconf_dtb_base = "0x2A000"
 # Uload bootloader
@@ -76,6 +78,7 @@ BID = ["1", "FA", "810"]
 
 [rzv2l-evk]
 ethernet = ["11c20000", "11c30000"]
+ethernet_udp_index = 0
 bl2_base = "0x12000"
 fconf_dtb_base = "0x2A000"
 # Uload bootloader
@@ -100,6 +103,7 @@ BID = ["1", "FA", "810"]
 
 [rzv2h-evk]
 ethernet = ["15c30000", "15c40000"]
+ethernet_udp_index = ["0", "1"]
 bl2_dest  = "0x08103000"
 bl2_base = "0x8103000"
 fconf_dtb_base = "0x08130000"
