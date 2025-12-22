@@ -304,6 +304,14 @@ flowchart TD
 - Insert the SD card if rootfs flashing is selected.
 - For Bootloader-flash: set boot switches to SCIF download mode.
 - For Uload-flash or rootfs flashing: set boot switches to normal mode.
+- Rootfs flash (UDP Fastboot): U-Boot fastboot-udp uses a single active Ethernet MAC per board. If multiple RJ45/PHY ports exist, only one is active (depending on board support). The script automatically selects the appropriate Ethernet port based on board configuration in `boards_flash_config.toml`. For boards with multiple available ports, the script will prompt you to select which port to use.
+
+  | Board       | Ethernet port(s) used |
+  |-------------|----------------------|
+  | rzg2l-sbc   | 1                    |
+  | rzv2l-evk   | 0                    |
+  | rzg2l-evk   | 0                    |
+  | rzv2h-evk   | 0 or 1 (user selectable) |
 
 Both fastboot-otg and fastboot-udp write to U-Boot's current MMC device (typically mmc0). Depending on board and revision, mmc0 may point to the SD card or eMMC.
 

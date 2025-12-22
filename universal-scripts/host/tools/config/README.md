@@ -57,7 +57,6 @@ Each board has a dedicated section for its specific configuration. The available
   - ethernet: Specifies the addresses of `ether0` and `ether1` in sequential order.
   - ethernet_udp_index: Specifies which Ethernet port(s) to use for UDP fastboot flashing. Can be a single integer (e.g., `0` or `1`) or a list of integers (e.g., `["0", "1"]`) if multiple ports are available. The universal flash script will automatically use this value without prompting the user.
   - flash_address: The SPI flash address where BL2, FIP, and board information are sequentially stored.
-  - load_address: The working RAM address used to load the binary file before writing it to SPI flash..
   - load_address: The working RAM address used to load the binary file before writing it to SPI flash.
 
 - **xspi**:

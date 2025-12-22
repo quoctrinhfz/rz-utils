@@ -20,6 +20,9 @@ try:
 except ImportError:
     import tomllib as tomli
 
+# Constants
+MESSAGE_WIDTH = 70
+
 @dataclass
 class FlashInfo:
     bl2: str
@@ -271,27 +274,40 @@ class UniversalFlashUtil:
                 # Get ethernet port info from board config
                 ethernet_port_info = ""
                 ether_port = "1"  # default value
+                available_ports = []
                 
                 if self.selected_board_name in self.board_config:
                     board_cfg = self.board_config[self.selected_board_name]
                     if 'ethernet_udp_index' in board_cfg:
                         udp_index = board_cfg['ethernet_udp_index']
                         if isinstance(udp_index, list):
-                            # If multiple ports available, use the first one
-                            ether_port = str(udp_index[0])
-                            ethernet_port_info = f" (Using Ethernet port: {ether_port}, available ports: {', '.join(map(str, udp_index))})"
+                            # If multiple ports available, allow user to select
+                            available_ports = [str(p) for p in udp_index]
+                            ethernet_port_info = f" (Available ports: {', '.join(available_ports)})"
                         else:
                             ether_port = str(udp_index)
                             ethernet_port_info = f" (Using Ethernet port: {ether_port})"
                 
-                print(f"\n{'='*70}")
+                print(f"\n{'='*MESSAGE_WIDTH}")
                 print(f"** IMPORTANT: Ethernet Connection Required **")
-                print(f"{'='*70}")
+                print(f"{'='*MESSAGE_WIDTH}")
                 print(f"Please connect an Ethernet cable between:")
-                print(f"  - PC Host Ethernet port")
+                print(f"  - Host (PC or router) Ethernet port")
                 print(f"  - Board Ethernet port{ethernet_port_info}")
                 print(f"\nEnsure both devices are on the same network segment.")
-                print(f"{'='*70}\n")
+                print(f"{'='*MESSAGE_WIDTH}\n")
+                
+                # If multiple ports are available, let user select
+                if available_ports:
+                    print(f"Available Ethernet ports: {', '.join(available_ports)}")
+                    while True:
+                        selected_port = input(f"Select Ethernet port (default {available_ports[0]}): ").strip() or available_ports[0]
+                        if selected_port in available_ports:
+                            ether_port = selected_port
+                            break
+                        else:
+                            print(f"Invalid port. Please select from: {', '.join(available_ports)}")
+                
                 self.selected_ip_address = input(f"Enter IP address for fastboot udp (default {self.selected_ip_address}): ") or self.selected_ip_address
                 
                 sdflash_args += ['--ether_port', ether_port,
@@ -301,6 +317,7 @@ class UniversalFlashUtil:
                 pass
             else:
                 print(f"Unsupported rootfs flash method: '{self.selected_info.rootfs_flash_method}'")
+                print(f"Supported methods are: 'udp' or 'otg'")
                 return False
 
             sdFlashUtil = SdFlashUtil(args=sdflash_args)
@@ -311,14 +328,14 @@ def show_help():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     readme_path = os.path.join(script_dir, "README.md")
     
-    print("\n" + "="*70)
+    print("\n" + "="*MESSAGE_WIDTH)
     print("Universal Flash Tool - Help Menu")
-    print("="*70)
+    print("="*MESSAGE_WIDTH)
     print("\nOptions:")
     print("  1. View installation and setup instructions")
     print("  2. Run the flash tool")
     print("  3. Exit")
-    print("="*70)
+    print("="*MESSAGE_WIDTH)
     
     while True:
         try:
@@ -327,12 +344,35 @@ def show_help():
             if choice == "1":
                 # Display README.md path
                 if os.path.exists(readme_path):
-                    print("\n" + "="*70)
+                    import platform
+                    os_name = platform.system()
+                    
+                    # Determine which section to refer to based on OS
+                    if os_name == "Windows":
+                        prereq_section = "Prerequisites -> Python, Environment and Tool Dependencies -> Windows"
+                    elif os_name == "Linux":
+                        prereq_section = "Prerequisites -> Python, Environment and Tool Dependencies -> Linux"
+                    else:
+                        prereq_section = "Prerequisites section"
+                    
+                    print("\n" + "="*MESSAGE_WIDTH)
                     print("Installation and Setup Instructions")
-                    print("="*70)
+                    print("="*MESSAGE_WIDTH)
                     print(f"\nPlease refer to the README.md file for detailed instructions:")
                     print(f"\nFile path: {readme_path}")
-                    print("="*70)
+                    print(f"\n** IMPORTANT: Before running the flash tool **")
+                    print(f"You must install all prerequisite tools listed in:")
+                    print(f"  README.md -> {prereq_section}")
+                    print(f"\nThis includes:")
+                    print(f"  - Python and required packages (pyserial, tomli)")
+                    if os_name == "Linux":
+                        print(f"  - Build tools (build-essential, libssl-dev)")
+                        print(f"  - Fastboot (android-tools-fastboot)")
+                    elif os_name == "Windows":
+                        print(f"  - GNU binutils (MinGW-w64)")
+                        print(f"  - OpenSSL for MinGW-w64")
+                        print(f"  - WinUSB driver (via Zadig) for USB OTG flashing")
+                    print("="*MESSAGE_WIDTH)
                     
                     # Ask if user wants to continue to flash tool
                     continue_choice = input("\nDo you want to run the flash tool now? (y/n): ").strip().lower()
