@@ -99,9 +99,16 @@ Specify the Ethernet device index with `--ether_port` when using `--fastboot_typ
 | Board       | `--ether_port` to use |
 |------------|------------------------|
 | rzg2l-sbc  | 1 |
+| rs-g2l100  | 0, 1 |
 | rzv2l-evk  | 0 |
 | rzg2l-evk  | 0 |
 | rzv2h-evk  | 0, 1 |
+| rzv2h-rvk  | 0 |
+| imdt-v2h-sbc  | 0, 1 |
+
+> **Note for rzv2h-rdk board:**
+> 
+> On the rzv2h-rdk board, the debug/OTG USB port and the board's main power are supplied through the same power jack. If you disconnect the power adapter, the USB port will also lose power, causing the host PC to lose connection with the board's USB device. When performing a power-cycle (unplugging/replugging the power), make sure not to change the USB port or cable on your PC, and always reconnect both the power and USB exactly as before. This helps avoid reconnection issues during flashing or debugging.
 
 **Fastboot MMC Target**
 

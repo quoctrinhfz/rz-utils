@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import argparse
+import glob
 from dataclasses import dataclass
 from serial.tools.list_ports import comports
 
@@ -21,7 +22,7 @@ except ImportError:
     import tomllib as tomli
 
 # Constants
-MESSAGE_WIDTH = 70
+MESSAGE_WIDTH = 85
 
 @dataclass
 class FlashInfo:
@@ -42,6 +43,7 @@ class UniversalFlashUtil:
         self.boards_data = {}
         self.board_config = {}
         self.selected_port = None
+        self.selected_port_by_id = None  # For reliable reconnection after power cycle
         self.selected_baud_rate = 115200
         self.selected_board_name = None
         self.selected_ip_address = "169.254.187.89"
@@ -75,6 +77,25 @@ class UniversalFlashUtil:
                 except Exception as e:
                     print(f"Warning: Could not set execute permission for {tool}: {e}")
 
+    def _get_by_id_path(self, tty_device: str) -> str:
+        """Get the /dev/serial/by-id/ path for a given tty device.
+        This allows reliable reconnection after power cycle."""
+        by_id_dir = "/dev/serial/by-id"
+        if not os.path.exists(by_id_dir):
+            return tty_device
+        
+        device_name = os.path.basename(tty_device)
+        
+        try:
+            for by_id_link in glob.glob(os.path.join(by_id_dir, "*")):
+                real_path = os.path.realpath(by_id_link)
+                if os.path.basename(real_path) == device_name:
+                    return by_id_link
+        except Exception as e:
+            print(f"Warning: Could not resolve by-id path: {e}")
+        
+        return tty_device
+
     def load_json(self):
         try:
             with open(self.json_file, 'r') as f:
@@ -106,12 +127,16 @@ class UniversalFlashUtil:
             print(f"{idx + 1}. {board}")
 
         board_names = list(self.boards_data.keys())
-        selection = int(input("Select board by number: ")) - 1
-        if selection < 0 or selection >= len(board_names):
-            print("Invalid selection.")
+        try:
+            selection = int(input("Select board by number: ")) - 1
+            if selection < 0 or selection >= len(board_names):
+                print("Invalid selection.")
+                return False
+            self.selected_board_name = board_names[selection]
+            print(f"Selected board: {self.selected_board_name}\n")
+        except (ValueError, KeyboardInterrupt):
+            print("\nOperation cancelled by user.")
             return False
-        self.selected_board_name = board_names[selection]
-        print(f"Selected board: {self.selected_board_name}\n")
 
         # Serial port and baud rate selection
         ports = [p.device for p in comports()]
@@ -122,15 +147,25 @@ class UniversalFlashUtil:
         for i, port in enumerate(ports):
             print(f"{i}: {port}")
 
-        index = int(input(f"Select a port by number (Default {ports[0]}): ") or 0)
-        if 0 <= index < len(ports):
-            self.selected_port = ports[index]
-        else:
-            print("Invalid number. Try again.")
+
+        try:
+            index = int(input(f"Select a port by number (Default {ports[0]}): ") or 0)
+            if 0 <= index < len(ports):
+                self.selected_port = ports[index]
+                # Get by-id path for reliable reconnection
+                self.selected_port_by_id = self._get_by_id_path(self.selected_port)
+            else:
+                print("Invalid number. Try again.")
+                return False
+        except (ValueError, KeyboardInterrupt):
+            print("\nOperation cancelled by user.")
             return False
 
         self.selected_baud_rate = int(input(f"Enter baud rate (Default {self.selected_baud_rate}): ") or 115200)
-        print(f"Selected port [{self.selected_port}] with baud rate: {self.selected_baud_rate}\n")
+        print(f"Selected port [{self.selected_port}] with baud rate: {self.selected_baud_rate}")
+        if self.selected_port_by_id and self.selected_port_by_id != self.selected_port:
+            print(f"Device ID path: {self.selected_port_by_id}")
+        print()
         return True
 
     def prepare_binaries(self):
@@ -267,6 +302,10 @@ class UniversalFlashUtil:
                 '--fastboot_type', f"{self.selected_info.rootfs_flash_method}",
                 '--image_rootfs', f"{self.__imagesDir}/{self.selected_info.rootfs}",
             ]
+            
+            # Add by-id path for reliable reconnection after power cycle
+            if self.selected_port_by_id:
+                sdflash_args += ['--serial_port_by_id', self.selected_port_by_id]
 
             method = (self.selected_info.rootfs_flash_method or "").lower()
 

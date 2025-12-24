@@ -54,6 +54,7 @@ BID = ["1", "FA", "810"]
 
 [rs-g2l100]
 ethernet = ["11c20000", "11c30000"]
+ethernet_udp_index = ["0", "1"]
 bl2_base = "0x12000"
 fconf_dtb_base = "0x2A000"
 # Uload bootloader
@@ -130,6 +131,7 @@ BID = ["1", "200", "120000", "762", "762"]
 
 [rzv2h-rdk]
 ethernet = ["15c30000", "15c40000"]
+ethernet_udp_index = 0
 bl2_dest  = "0x08103000"
 bl2_base = "0x8103000"
 fconf_dtb_base = "0x08130000"
@@ -141,8 +143,8 @@ load_address = "0x48000000"
 # Bootloader flash SPI
 [rzv2h-rdk.xspi]
 BL2 = ["8101E00", "00000"]
+BID = ["00810", "5F300"]
 FIP = ["00000", "60000"]
-BID = ["00810", "120000"]
 
 ####################################
 # IMDT V2H Single Board Computer configurations
@@ -150,6 +152,7 @@ BID = ["00810", "120000"]
 
 [imdt-v2h-sbc]
 ethernet = ["15c30000", "15c40000"]
+ethernet_udp_index = ["0", "1"]
 bl2_dest  = "0x08103000"
 bl2_base = "0x8103000"
 fconf_dtb_base = "0x08130000"
