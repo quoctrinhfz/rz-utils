@@ -114,13 +114,16 @@ Specify the Ethernet device index with `--ether_port` when using `--fastboot_typ
 
 Both fastboot-otg and fastboot-udp write to U-Boot's current MMC device (typically mmc0). Depending on board and revision, mmc0 may point to the SD card or eMMC.
 
-| Board / Rev                                | Fastboot Method | Typical mmc0 target                                                     | How to change target                                           |
-|--------------------------------------------|-----------------|-------------------------------------------------------------------------|----------------------------------------------------------------|
-| rzg2l-sbc                                  | UDP             | Carrier SD (board default)                                              | N/A (single device)                                            |
-| rzv2l-evk                                  | UDP, OTG        | SD (CN3 on SOM or eMMC device depending on SW1)                        | Set SW1-2 ON to SD and OFF to eMMC                             |
-| rzg2l-evk                                  | UDP, OTG        | SD (CN3 on SOM or eMMC device depending on SW1)                        | Set SW1-2 ON to SD and OFF to eMMC                             |
-| rzv2h-evk (rev 1: 2 SD cards)              | UDP, OTG        | SD card slot 0                                                          | N/A (single device)                                            |
-| rzv2h-evk (rev 2: 1 SD & 1 eMMC)           | UDP, OTG        | eMMC                                                                    | N/A (single device)                                            |
+| Board/Rev                                   | Fastboot Method | Typical mmc0 target                                  | How to change target           |
+|---------------------------------------------|-----------------|------------------------------------------------------|-------------------------------|
+| RZ/G2L-SBC                                  | UDP             | Carrier SD (board default)                            | N/A (single device)           |
+| RS-G2L100                                   | UDP, OTG        | eMMC                                                | N/A (single device)           |
+| RZ/V2L-EVK                                  | UDP, OTG        | SD (CN10 on SOM or eMMC device depending on SW1)      | Set SW1-2 ON to SD and OFF to eMMC |
+| RZ/G2L-EVK                                  | UDP, OTG        | SD (CN10 on SOM or eMMC device depending on SW1)      | Set SW1-2 ON to SD and OFF to eMMC |
+| RZ/V2H-EVK (Rev 1 – 2 SD cards)             | UDP, OTG        | SD card slot 0                                       | N/A (single device)           |
+| RZ/V2H-EVK (Rev 2 – SD & eMMC)              | UDP, OTG        | eMMC                                                | N/A (single device)           |
+| RZ/V2H-RDK                                  | UDP             | SD card                                             | N/A (single device)           |
+| IMDT V2H-SBC                                | UDP, OTG        | eMMC                                                | N/A (single device)           |
 
 ---
 

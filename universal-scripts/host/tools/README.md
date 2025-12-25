@@ -1,3 +1,4 @@
+
 # universal-scripts
 
 The **universal flash script** supports flashing RZ images across multiple boards by using information from a JSON configuration file.
@@ -12,8 +13,11 @@ Supported boards:
 
 - [RZG2L-SBC](https://www.renesas.com/en/design-resources/boards-kits/rz-g2l-sbc?srsltid=AfmBOopW7k6H7kvdtnxYYs72c6Pm_8u667-UDBi8v9-WXPHjQvzWlhLN)
 - [RZG2L-EVK](https://www.renesas.com/en/design-resources/boards-kits/rz-g2l-evkit?srsltid=AfmBOoqqLvuA9ZrzAhhRLi9JR1JVUcoc9MUICwtZ78ZER-hchmQ3ps5I)
+- [RS-G2L100](https://www.renesas.com/en/products/rz-g2l)
 - [RZV2L-EVK](https://www.renesas.com/en/design-resources/boards-kits/rz-v2l-evkit?srsltid=AfmBOooz3AGWNCJNed1qk6NS0qeZBngU79XQ4h2KUkmMam82y615JPjr)
 - [RZV2H-EVK](https://www.renesas.com/en/design-resources/boards-kits/rz-v2h-evk?srsltid=AfmBOooL-eoj5j3zum-HIL5v0JE9SROaKosWHYCOHfvySpJ4g39N9R_V)
+- [RZV2H-RDK](https://www.renesas.com/en/products/rz-v2h)
+- [IMDT V2H-SBC](https://www.renesas.com/en/products/rz-v2h)
 
 ## Prerequisites:
 
@@ -216,12 +220,15 @@ The `flash_images.json` file contains predefined image mappings for supported de
 
 This table below lists the available options (and sensible defaults) for `ipl_flash_method` and `rootfs_flash_method` per board.
 
-| Board        | SoC | `ipl_flash_method` (options) | Default | `rootfs_flash_method` (options) | Default |
-|--------------|-----|------------------------------|---------|----------------------------------|---------|
-| **rzg2l-sbc** | g2l | `xspi`                | `xspi`  | `udp`              | `udp`   |
-| **rzg2l-evk** | g2l | `xspi`, `emmc`        | `xspi`  | `udp`, `otg`       | `otg`   |
-| **rzv2l-evk** | v2l | `xspi`, `emmc`        | `xspi`  | `udp`, `otg`       | `otg`   |
-| **rzv2h-evk** | v2h | `xspi`                | `xspi`  | `udp`, `otg`       | `otg`   |
+| Board           | SoC/MPU | ipl_flash_method      | Default | rootfs_flash_method | Default |
+|-----------------|---------|-----------------------|---------|---------------------|---------|
+| rzg2l-sbc       | g2l     | xspi                  | xspi    | udp                 | udp     |
+| rs-g2l100       | g2l     | xspi                  | xspi    | udp, otg            | otg     |
+| rzg2l-evk       | g2l     | xspi, emmc            | xspi    | udp, otg            | otg     |
+| rzv2l-evk       | v2l     | xspi, emmc            | xspi    | udp, otg            | otg     |
+| rzv2h-evk       | v2h     | xspi                  | xspi    | udp, otg            | otg     |
+| rzv2h-rdk       | v2h     | xspi                  | xspi    | udp                 | udp     |
+| imdt-v2h-sbc    | v2h     | xspi                  | xspi    | otg                 | otg     |
 
 **Notes:**
 - *IPL flash method*: `emmc` for `rzv2h-evk` is **not supported yet**.
@@ -271,32 +278,70 @@ Example of a sample board configuration in JSON:
 ## Flowchart
 
 The universal flash script prompts the user for options and proceeds through the flashing process based on the input. The detailed procedure is as follows:
+### Help Menu Flowchart
+
+The following flowchart illustrates the logic when running the help command for the universal flash tool. It shows the user interaction steps and options available:
 
 ```mermaid
 flowchart TD
-    classDef default fill:#f0f4f8,stroke:#333,stroke-width:1px,font-size:14px
-    classDef decision fill:#fef6e4,stroke:#c89b3c,stroke-width:2px,font-weight:bold
-    classDef action fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
-    classDef terminal fill:#d1fae5,stroke:#10b981,stroke-width:2px,font-weight:bold
+  classDef default fill:#f0f4f8,stroke:#333,stroke-width:1px,font-size:14px
+  classDef decision fill:#fef6e4,stroke:#c89b3c,stroke-width:2px,font-weight:bold
+  classDef action fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
+  classDef terminal fill:#d1fae5,stroke:#10b981,stroke-width:2px,font-weight:bold
 
-    A((Start)):::terminal --> B[Display available boards]:::action
-    B --> C[User selects board]:::action
-    C --> D[Display available serial ports]:::action
-    D --> E[User selects port and baud rate]:::action
+  H1[Start]:::terminal --> H2[Display Help Menu with options]:::action
+  H2 --> H3[User selects option 1, 2, or 3]:::decision
+  H3 -->|1: Installation| H4[Show installation and setup instructions]:::action
+  H4 --> H5[Refer user to README.md for details]:::action
+  H5 --> H6[Prompt: Run flash tool now?]:::decision
+  H6 -->|y| H7[Run flash tool]:::action
+  H6 -->|n| H8[Exit]:::terminal
+  H3 -->|2: Run tool| H7[Run flash tool]:::action
+  H3 -->|3: Exit| H8[Exit]:::terminal
+```
 
-    E --> G{Write IPL?}:::decision
-    G -->|y| H{Select IPL method}:::decision
-    H -->|BootloaderFlash| M[Compile firmware: build BL2 & FIP with per-board DTB at runtime]:::action
-    M --> J[Write IPL by BootloaderFlash]:::action
-    H -->|ULoadFlash| K[Write IPL by ULoadFlash]:::action
+To display this help menu, use the following command:
 
-    J --> F{Write RootFS?}:::decision
-    K --> F{Write RootFS?}:::decision
-    G -->|n| F{Write RootFS?}:::decision
+```bash
+python3 universal_flash.py --help
+```
+### Installation Flowchart
+This flowchart shows the process when running the universal flash tool directly (without the --help argument). The script will immediately start the flashing workflow:
 
-    F -->|y| FR[Write RootFS to SD/eMMC]:::action
-    FR --> L((End)):::terminal
-    F -->|n| L((End)):::terminal
+```mermaid
+flowchart TD
+  classDef default fill:#f0f4f8,stroke:#333,stroke-width:1px,font-size:14px
+  classDef decision fill:#fef6e4,stroke:#c89b3c,stroke-width:2px,font-weight:bold
+  classDef action fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
+  classDef terminal fill:#d1fae5,stroke:#10b981,stroke-width:2px,font-weight:bold
+
+  A[Start]:::terminal --> B[Display available boards]:::action
+  B --> C[User selects board]:::action
+  C --> D[Display available serial ports]:::action
+  D --> E[User selects port and baud rate]:::action
+
+  E --> G{Write IPL?}:::decision
+  G -->|Yes| H{Select IPL method}:::decision
+  H -->|BootloaderFlash| M[Compile firmware: build BL2 & FIP with per-board DTB at runtime]:::action
+  M --> J[Write IPL by BootloaderFlash]:::action
+  H -->|ULoadFlash| K[Write IPL by ULoadFlash]:::action
+
+  J --> F{Write RootFS?}:::decision
+  K --> F{Write RootFS?}:::decision
+  G -->|No| F{Write RootFS?}:::decision
+
+  F -->|Yes| FR[Write RootFS to SD/eMMC]:::action
+  FR --> L[End]:::terminal
+  F -->|No| L[End]:::terminal
+```
+
+**Explanation:**
+When you run the script without any arguments, it will skip the help menu and immediately prompt you to select a board and begin the flashing process. You will be guided through board selection, serial port setup, IPL and rootfs flashing steps.
+
+To run the tool directly, use:
+
+```bash
+python3 universal_flash.py
 ```
 
 **Notes:**
@@ -306,22 +351,28 @@ flowchart TD
 - For Uload-flash or rootfs flashing: set boot switches to normal mode.
 - Rootfs flash (UDP Fastboot): U-Boot fastboot-udp uses a single active Ethernet MAC per board. If multiple RJ45/PHY ports exist, only one is active (depending on board support). The script automatically selects the appropriate Ethernet port based on board configuration in `boards_flash_config.toml`. For boards with multiple available ports, the script will prompt you to select which port to use.
 
-  | Board       | Ethernet port(s) used |
+  | Board         | Ethernet port(s) used |
   |-------------|----------------------|
-  | rzg2l-sbc   | 1                    |
-  | rzv2l-evk   | 0                    |
-  | rzg2l-evk   | 0                    |
-  | rzv2h-evk   | 0 or 1 (user selectable) |
+  | rzg2l-sbc    | 1                    |
+  | rs-g2l100    | 0, 1                 |
+  | rzv2l-evk    | 0                    |
+  | rzg2l-evk    | 0                    |
+  | rzv2h-evk    | 0, 1                 |
+  | rzv2h-rvk    | 0                    |
+  | imdt-v2h-sbc | 0, 1                 |
 
 Both fastboot-otg and fastboot-udp write to U-Boot's current MMC device (typically mmc0). Depending on board and revision, mmc0 may point to the SD card or eMMC.
 
-| Board / Rev                                | Fastboot Method | Typical mmc0 target                                                     | How to change target                                           |
-|--------------------------------------------|-----------------|-------------------------------------------------------------------------|----------------------------------------------------------------|
-| rzg2l-sbc                                  | UDP             | Carrier SD (board default)                                              | N/A (single device)                                            |
-| rzv2l-evk                                  | UDP, OTG        | SD (CN3 on SOM or eMMC device depending on SW1)                        | Set SW1-2 ON to SD and OFF to eMMC                             |
-| rzg2l-evk                                  | UDP, OTG        | SD (CN3 on SOM or eMMC device depending on SW1)                        | Set SW1-2 ON to SD and OFF to eMMC                             |
-| rzv2h-evk (rev 1: 2 SD cards)              | UDP, OTG        | SD card slot 0                                                          | N/A (single device)                                            |
-| rzv2h-evk (rev 2: 1 SD & 1 eMMC)           | UDP, OTG        | eMMC                                                                    | N/A (single device)                                            |
+| Board/Rev                                   | Fastboot Method | Typical mmc0 target                                  | How to change target           |
+|---------------------------------------------|-----------------|------------------------------------------------------|-------------------------------|
+| RZ/G2L-SBC                                  | UDP             | Carrier SD (board default)                            | N/A (single device)           |
+| RS-G2L100                                   | UDP, OTG        | eMMC                                                | N/A (single device)           |
+| RZ/V2L-EVK                                  | UDP, OTG        | SD (CN10 on SOM or eMMC device depending on SW1)      | Set SW1-2 ON to SD and OFF to eMMC |
+| RZ/G2L-EVK                                  | UDP, OTG        | SD (CN10 on SOM or eMMC device depending on SW1)      | Set SW1-2 ON to SD and OFF to eMMC |
+| RZ/V2H-EVK (Rev 1 – 2 SD cards)             | UDP, OTG        | SD card slot 0                                       | N/A (single device)           |
+| RZ/V2H-EVK (Rev 2 – SD & eMMC)              | UDP, OTG        | eMMC                                                | N/A (single device)           |
+| RZ/V2H-RDK                                  | UDP             | SD card                                             | N/A (single device)           |
+| IMDT V2H-SBC                                | UDP, OTG        | eMMC                                                | N/A (single device)           |
 
 ---
 
