@@ -326,6 +326,11 @@ class UniversalFlashUtil:
                         else:
                             ether_port = str(udp_index)
                             ethernet_port_info = f" (Using Ethernet port: {ether_port})"
+                    else:
+                        print(f"Warning: 'ethernet_udp_index' not found in board config for {self.selected_board_name}. Using default port 1.")
+                        ether_port = "1"
+                        ethernet_port_info = " (default port index: 1)"
+                        available_ports = []
                 
                 print(f"\n{'='*MESSAGE_WIDTH}")
                 print(f"** IMPORTANT: Ethernet Connection Required **")
@@ -353,7 +358,12 @@ class UniversalFlashUtil:
                          '--ip_address', self.selected_ip_address]
             elif method == "otg":
                 # No Ethernet/IP options needed for OTG/USB fastboot
-                pass
+                print(f"\n{'='*MESSAGE_WIDTH}")
+                print(f"** IMPORTANT: USB OTG Flashing Mode **")
+                print(f"{'='*MESSAGE_WIDTH}")
+                print(f"USB OTG flashing will be used to write the rootfs.")
+                print(f"Ensure the board's USB OTG port is connected to the PC.")
+                print(f"{'='*MESSAGE_WIDTH}\n")
             else:
                 print(f"Unsupported rootfs flash method: '{self.selected_info.rootfs_flash_method}'")
                 print(f"Supported methods are: 'udp' or 'otg'")
@@ -409,7 +419,10 @@ def show_help():
                         print(f"  - Fastboot (android-tools-fastboot)")
                     elif os_name == "Windows":
                         print(f"  - GNU binutils (MinGW-w64)")
-                        print(f"  - OpenSSL for MinGW-w64")
+                        print(f"Warning: 'ethernet_udp_index' not found in board config for {self.selected_board_name}. Using default port 1.")
+                        ether_port = "1"
+                        ethernet_port_info = " (default port index: 1)"
+                        available_ports = []
                         print(f"  - WinUSB driver (via Zadig) for USB OTG flashing")
                     print("="*MESSAGE_WIDTH)
                     

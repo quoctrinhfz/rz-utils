@@ -346,6 +346,7 @@ class SdFlashUtil:
 		self.__writeSerialCmd('saveenv')
 		self.__serialRead('OK')
 		self.__writeSerialCmd('fastboot usb 27')
+		# Wait for USB OTG device to enumerate on the host
 		time.sleep(3)
 
 		devs = self.__listDevice()

@@ -290,10 +290,10 @@ flowchart TD
   classDef terminal fill:#d1fae5,stroke:#10b981,stroke-width:2px,font-weight:bold
 
   H1[Start]:::terminal --> H2[Display Help Menu with options]:::action
-  H2 --> H3[User selects option 1, 2, or 3]:::decision
+  H2 --> H3{"User selects option 1, 2, or 3"}:::decision
   H3 -->|1: Installation| H4[Show installation and setup instructions]:::action
   H4 --> H5[Refer user to README.md for details]:::action
-  H5 --> H6[Prompt: Run flash tool now?]:::decision
+  H5 --> H6{"Prompt: Run flash tool now?"}:::decision
   H6 -->|y| H7[Run flash tool]:::action
   H6 -->|n| H8[Exit]:::terminal
   H3 -->|2: Run tool| H7[Run flash tool]:::action
@@ -320,15 +320,15 @@ flowchart TD
   C --> D[Display available serial ports]:::action
   D --> E[User selects port and baud rate]:::action
 
-  E --> G{Write IPL?}:::decision
-  G -->|Yes| H{Select IPL method}:::decision
+  E --> G{"Write IPL?"}:::decision
+  G -->|Yes| H{"Select IPL method"}:::decision
   H -->|BootloaderFlash| M[Compile firmware: build BL2 & FIP with per-board DTB at runtime]:::action
   M --> J[Write IPL by BootloaderFlash]:::action
   H -->|ULoadFlash| K[Write IPL by ULoadFlash]:::action
 
-  J --> F{Write RootFS?}:::decision
-  K --> F{Write RootFS?}:::decision
-  G -->|No| F{Write RootFS?}:::decision
+  J --> F{"Write RootFS?"}:::decision
+  K --> F{"Write RootFS?"}:::decision
+  G -->|No| F{"Write RootFS?"}:::decision
 
   F -->|Yes| FR[Write RootFS to SD/eMMC]:::action
   FR --> L[End]:::terminal
@@ -349,6 +349,9 @@ python3 universal_flash.py
 - Insert the SD card if rootfs flashing is selected.
 - For Bootloader-flash: set boot switches to SCIF download mode.
 - For Uload-flash or rootfs flashing: set boot switches to normal mode.
+- **Board Reset/Power-cycle:**
+  - **RZ/{G,V}2L-EVK boards**: Use the RESET button to reset the board without removing power. The USB connection and serial port remain available during flashing.
+  - **RZ/V2H-RDK board**: Does not have a RESET button. You must power-cycle by unplugging and re-plugging the power adapter. Since the debug/OTG USB port is powered from the same power jack, the USB device will disconnect and the serial port will disappear from the host PC during power-cycle. Ensure you reconnect the USB cable to the same PC port after power-cycle to avoid reconnection issues.
 - Rootfs flash (UDP Fastboot): U-Boot fastboot-udp uses a single active Ethernet MAC per board. If multiple RJ45/PHY ports exist, only one is active (depending on board support). The script automatically selects the appropriate Ethernet port based on board configuration in `boards_flash_config.toml`. For boards with multiple available ports, the script will prompt you to select which port to use.
 
   | Board         | Ethernet port(s) used |
@@ -367,8 +370,8 @@ Both fastboot-otg and fastboot-udp write to U-Boot's current MMC device (typical
 |---------------------------------------------|-----------------|------------------------------------------------------|-------------------------------|
 | RZ/G2L-SBC                                  | UDP             | Carrier SD (board default)                            | N/A (single device)           |
 | RS-G2L100                                   | UDP, OTG        | eMMC                                                | N/A (single device)           |
-| RZ/V2L-EVK                                  | UDP, OTG        | SD (CN10 on SOM or eMMC device depending on SW1)      | Set SW1-2 ON to SD and OFF to eMMC |
-| RZ/G2L-EVK                                  | UDP, OTG        | SD (CN10 on SOM or eMMC device depending on SW1)      | Set SW1-2 ON to SD and OFF to eMMC |
+| RZ/V2L-EVK                                  | UDP, OTG        | SD (CN3 on SOM or eMMC device depending on SW1)      | Set SW1-2 ON to SD and OFF to eMMC |
+| RZ/G2L-EVK                                  | UDP, OTG        | SD (CN3 on SOM or eMMC device depending on SW1)      | Set SW1-2 ON to SD and OFF to eMMC |
 | RZ/V2H-EVK (Rev 1 – 2 SD cards)             | UDP, OTG        | SD card slot 0                                       | N/A (single device)           |
 | RZ/V2H-EVK (Rev 2 – SD & eMMC)              | UDP, OTG        | eMMC                                                | N/A (single device)           |
 | RZ/V2H-RDK                                  | UDP             | SD card                                             | N/A (single device)           |

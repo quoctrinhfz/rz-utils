@@ -108,7 +108,11 @@ Specify the Ethernet device index with `--ether_port` when using `--fastboot_typ
 
 > **Note for rzv2h-rdk board:**
 > 
-> On the rzv2h-rdk board, the debug/OTG USB port and the board's main power are supplied through the same power jack. If you disconnect the power adapter, the USB port will also lose power, causing the host PC to lose connection with the board's USB device. When performing a power-cycle (unplugging/replugging the power), make sure not to change the USB port or cable on your PC, and always reconnect both the power and USB exactly as before. This helps avoid reconnection issues during flashing or debugging.
+> The RZ/V2H-RDK board does not have a RESET button. To reset the board, you must power-cycle by unplugging and re-plugging the power adapter. Since the debug/OTG USB port and the board's main power are supplied through the same power jack, the USB device will disconnect during power-cycle, and the serial port will disappear from the host PC.
+> 
+> In contrast, RZ/{G,V}2L-EVK boards provide a RESET button, which allows you to reset the board without removing power, so the USB connection and serial port remain available during flashing.
+> 
+> When performing a power-cycle on RZ/V2H-RDK, make sure not to change the USB port or cable on your PC, and always reconnect both the power and USB exactly as before to avoid reconnection issues during flashing or debugging.
 
 **Fastboot MMC Target**
 
@@ -118,8 +122,8 @@ Both fastboot-otg and fastboot-udp write to U-Boot's current MMC device (typical
 |---------------------------------------------|-----------------|------------------------------------------------------|-------------------------------|
 | RZ/G2L-SBC                                  | UDP             | Carrier SD (board default)                            | N/A (single device)           |
 | RS-G2L100                                   | UDP, OTG        | eMMC                                                | N/A (single device)           |
-| RZ/V2L-EVK                                  | UDP, OTG        | SD (CN10 on SOM or eMMC device depending on SW1)      | Set SW1-2 ON to SD and OFF to eMMC |
-| RZ/G2L-EVK                                  | UDP, OTG        | SD (CN10 on SOM or eMMC device depending on SW1)      | Set SW1-2 ON to SD and OFF to eMMC |
+| RZ/V2L-EVK                                  | UDP, OTG        | SD (CN3 on SOM or eMMC device depending on SW1)      | Set SW1-2 ON to SD and OFF to eMMC |
+| RZ/G2L-EVK                                  | UDP, OTG        | SD (CN3 on SOM or eMMC device depending on SW1)      | Set SW1-2 ON to SD and OFF to eMMC |
 | RZ/V2H-EVK (Rev 1 – 2 SD cards)             | UDP, OTG        | SD card slot 0                                       | N/A (single device)           |
 | RZ/V2H-EVK (Rev 2 – SD & eMMC)              | UDP, OTG        | eMMC                                                | N/A (single device)           |
 | RZ/V2H-RDK                                  | UDP             | SD card                                             | N/A (single device)           |

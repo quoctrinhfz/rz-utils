@@ -225,7 +225,8 @@ class FirmwareBuilder:
 	def make_bl2_padded(self):
 		"""Pads the BL2 binary with null bytes to reach the DTB limit."""
 		if not self.bl2.exists():
-			# Hide detailed error, just exit silently
+			print(f"ERROR: BL2 file not found at {self.bl2}")
+			print(f"Please ensure the BL2 binary is available before running this script.")
 			sys.exit(1)
 
 		bl2_size = self.bl2.stat().st_size
