@@ -7,8 +7,22 @@ They are used automatically when the build system detects a Linux host.
 
 | Tool               | Platform Use Case                | Purpose |
 |--------------------|----------------------------------|---------|
-| `bpgen`        | RZ/G2L, RZ/V2L, RZ/V2H           | Generates a boot parameter binary (`bl2_bp_<board>.bin`) used by Boot ROM to load BL2|
-| `fiptool`      | All                              | Creates and manipulates Firmware Image Packages (FIP) for ARM Trusted Firmware. |
+| `bpgen`            | RZ/G2L, RZ/V2L, RZ/V2H           | Generates a boot parameter binary (`bl2_bp_<board>.bin`) used by Boot ROM to load BL2|
+| `fiptool`          | All                              | Creates and manipulates Firmware Image Packages (FIP) for ARM Trusted Firmware. Uses embedded RPATH to automatically find bundled OpenSSL libraries. |
+
+### Directory Structure
+
+```
+linux/
+├── bpgen                    # Boot parameter generator (static binary)
+├── fiptool                  # FIP tool binary (with embedded RPATH=$ORIGIN/lib)
+├── lib/
+│   ├── libcrypto.so.1.1     # OpenSSL crypto library
+│   └── OPENSSL_LICENSE.txt  # OpenSSL license
+└── Readme.md
+```
+
+**Note**: The `fiptool` binary has embedded RPATH (`$ORIGIN/lib`) which automatically loads the bundled OpenSSL library from the `lib/` subdirectory. No wrapper script or environment variables needed.
 
 ## Building from Source
 

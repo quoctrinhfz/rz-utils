@@ -99,10 +99,12 @@ pip3 install dataclasses
 
 ### Environment and Tool Dependencies
 
-Make sure you have the following installed or available in `tools/bin/<os>` or `host/tools/bin/<os>`:
-- `bpgen` - unified boot parameter generator (already included in the release package)
-- `fiptool` - TF-A utility (already included in the release package)
-- `objcopy` - part of GNU binutils (see installation steps above)
+The following tools are **already bundled** in `tools/bin/<os>` or `host/tools/bin/<os>`:
+- `bpgen` - unified boot parameter generator
+- `fiptool` - TF-A utility (includes bundled OpenSSL libraries)
+- `objcopy` - GNU binutils tool (includes bundled MinGW runtime for Windows)
+
+**No additional installation or PATH configuration required.** All dependencies are included.
 
 Firmware binaries and DTBs must be available in (already included in the release package):
 
@@ -112,11 +114,11 @@ target/images/
 
 #### Linux
 
-Install the required toolchain, OpenSSL headers and fastboot:
+Install the required toolchain and fastboot:
 
 ```sh
 sudo apt-get update
-sudo apt-get install build-essential libssl-dev android-tools-fastboot -y
+sudo apt-get install build-essential android-tools-fastboot -y
 ```
 
 #### Windows
@@ -166,40 +168,14 @@ Fastboot/OTG flashing on Windows requires the device's **Fastboot / USB-download
       Renesas1         fastboot
      ```
 
-**Windows Build Prerequisites (GNU binutils + OpenSSL)**
-
-For Windows builds, both **GNU binutils** and **OpenSSL** are required to generate pre-compiled binaries.
-
-1. GNU Binutils
-- Download and install [MinGW-w64](https://www.mingw-w64.org/).  
-- Add the following path to the Windows **Environment Variables** → **Path**:  
-```
-C:/MinGW/bin
-```
-
-2. OpenSSL (for MinGW-w64)
-- Download the package from: [MinGW-w64 OpenSSL](https://packages.msys2.org/packages/mingw-w64-x86_64-openssl)
-- Extract the package into:
-```
-C:/mingw64
-```
-
-> [!IMPORTANT]  
-> ⚠️ **Important Notice for Windows users**  
-> - Executables such as `fiptool.exe` depend on OpenSSL runtime DLLs.  
->   - Add this directory to your **Environment Variables → Path**:  
->     ```
->     C:/mingw64/bin
->     ```
->   - Or copy the DLLs (`C:\mingw64\bin\libcrypto-3-x64.dll`) into:
->     ```
->     tools/bin/windows/
->     ```
->   - If skipped, running the tools will fail
+> [!NOTE]  
+> ℹ️ **All dependencies bundled for Windows**  
+> All required tools and runtime libraries are pre-bundled in `tools/bin/windows/`:
+> - `fiptool.exe`, `bpgen.exe`, `objcopy.exe` (executables)
+> - OpenSSL DLLs (`libcrypto-3-x64.dll`, `libssl-3-x64.dll`)
+> - MinGW runtime DLLs (`libgcc_s_seh-1.dll`, `libstdc++-6.dll`, `libwinpthread-1.dll`)
 >
-> - The `firmware_compile.py` script also depends on `objcopy` (part of GNU binutils).  
->   - Ensure `C:/MinGW/bin` is also in **Windows Environemnt Variables Path** so that `objcopy.exe` can be found.  
->   - Without it, the script will fail during SREC/ELF conversions.
+> **No installation or PATH configuration required.** The scripts automatically use the bundled binaries.
 
 ## JSON Configuration for a New Board
 
@@ -228,7 +204,7 @@ This table below lists the available options (and sensible defaults) for `ipl_fl
 | rzv2l-evk       | v2l     | xspi, emmc            | xspi    | udp, otg            | otg     |
 | rzv2h-evk       | v2h     | xspi                  | xspi    | udp, otg            | otg     |
 | rzv2h-rdk       | v2h     | xspi                  | xspi    | udp                 | udp     |
-| imdt-v2h-sbc    | v2h     | xspi                  | xspi    | otg                 | otg     |
+| imdt-v2h-sbc    | v2h     | xspi                  | xspi    | udp, otg            | otg     |
 
 **Notes:**
 - *IPL flash method*: `emmc` for `rzv2h-evk` is **not supported yet**.
@@ -361,7 +337,7 @@ python3 universal_flash.py
   | rzv2l-evk    | 0                    |
   | rzg2l-evk    | 0                    |
   | rzv2h-evk    | 0, 1                 |
-  | rzv2h-rvk    | 0                    |
+  | rzv2h-rdk    | 0                    |
   | imdt-v2h-sbc | 0, 1                 |
 
 Both fastboot-otg and fastboot-udp write to U-Boot's current MMC device (typically mmc0). Depending on board and revision, mmc0 may point to the SD card or eMMC.

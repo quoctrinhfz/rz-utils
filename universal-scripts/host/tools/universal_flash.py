@@ -17,9 +17,15 @@ from sd_flash import SdFlashUtil
 from uload_bootloader_flash import UloadFlashUtil
 
 try:
-    import tomli
-except ImportError:
     import tomllib as tomli
+except ImportError:
+    try:
+        import tomli
+    except ImportError:
+        print("ERROR: Neither tomllib (Python >=3.11) nor tomli package is available.")
+        print("Please install tomli: pip install tomli")
+        print("Or use Python 3.11 or later which includes tomllib.")
+        sys.exit(1)
 
 # Constants
 MESSAGE_WIDTH = 85
@@ -419,10 +425,6 @@ def show_help():
                         print(f"  - Fastboot (android-tools-fastboot)")
                     elif os_name == "Windows":
                         print(f"  - GNU binutils (MinGW-w64)")
-                        print(f"Warning: 'ethernet_udp_index' not found in board config for {self.selected_board_name}. Using default port 1.")
-                        ether_port = "1"
-                        ethernet_port_info = " (default port index: 1)"
-                        available_ports = []
                         print(f"  - WinUSB driver (via Zadig) for USB OTG flashing")
                     print("="*MESSAGE_WIDTH)
                     

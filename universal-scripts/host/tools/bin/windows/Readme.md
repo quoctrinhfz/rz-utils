@@ -1,14 +1,29 @@
 # `bin/windows/` – Windows Host Tools
 
 This directory contains Windows-compatible versions of the firmware utilities used in the RZ software build flow.
-They are invoked automatically when the build system detects a Windows host, but it can also build them from source if required.
+They are invoked automatically when the build system detects a Windows host.
 
 ## Contents
 
 | Tool               | Platform Use Case                | Purpose |
 |--------------------|----------------------------------|---------|
 | `bpgen.exe`        | RZ/G2L, RZ/V2L, RZ/V2H           | Generates the boot parameter binary (`bl2_bp_<board>.bin`) used by Boot ROM to load BL2|
-| `fiptool.exe`      | All                              | Creates and manipulates Firmware Image Packages (FIP) for ARM Trusted Firmware (TF-A). |
+| `fiptool.exe`      | All                              | Creates and manipulates Firmware Image Packages (FIP) for ARM Trusted Firmware (TF-A). Includes bundled OpenSSL library. |
+| `objcopy.exe`      | All                              | Converts binary files to SREC format with VMA addressing (from GNU binutils). |
+
+### Directory Structure
+
+```
+windows/
+├── bpgen.exe                # Boot parameter generator
+├── fiptool.exe              # FIP tool
+├── objcopy.exe              # Binary to SREC converter
+├── libcrypto-3-x64.dll      # OpenSSL 3.x crypto library (required by fiptool.exe)
+├── OPENSSL_LICENSE.txt      # OpenSSL license
+└── Readme.md
+```
+
+**Note**: The required OpenSSL DLL (`libcrypto-3-x64.dll`) is bundled in this directory. Windows will automatically load it from the same directory when executing `fiptool.exe`. No separate installation or PATH configuration is needed.
 
 ## Building from Source
 
